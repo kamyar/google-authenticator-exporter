@@ -1,3 +1,4 @@
+import os
 import time
 from typing import List
 
@@ -6,7 +7,9 @@ import pyotp
 import qrcode
 from pyzbar.pyzbar import Decoded, decode
 
-from otp_export.parse import OTP, parse_data
+from .otp_export.parse import OTP, parse_data
+
+QRS_EXPORT_DIRECTORY = "qrs"
 
 cv2.namedWindow("preview")
 vc = cv2.VideoCapture(0)
@@ -28,14 +31,14 @@ def get_one_qr_code() -> List[Decoded]:
     return []
 
 
-qr1 = get_one_qr_code()
+def export():
+    qr1 = get_one_qr_code()
 
-otps: List[OTP] = parse_data(qr1[0].data)
-for otp in otps:
-    data = pyotp.totp.TOTP(otp.secret).provisioning_uri(name=otp.name, issuer_name=otp.issuer)
-    print(data)
-    img = qrcode.make(data)
-    img.save(f"qrs/{otp.name}-{otp.issuer}.png")
-
-    # cv2.imshow("preview", img)
-    # input()
+    otps: List[OTP] = parse_data(qr1[0].data)
+    for otp in otps:
+        data = pyotp.totp.TOTP(otp.secret).provisioning_uri(name=otp.name, issuer_name=otp.issuer)
+        print(data)
+        img = qrcode.make(data)
+        if not os.path.exists(QRS_EXPORT_DIRECTORY):
+            os.mkdir(QRS_EXPORT_DIRECTORY)
+        img.save(f"{QRS_EXPORT_DIRECTORY}/{otp.name}-{otp.issuer}.png")
